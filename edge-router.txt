@@ -1,0 +1,41 @@
+! Edge Router - Small Business Network Design
+! Device: Cisco 2911 (Packet Tracer)
+! Role: Internet edge, NAT, inbound ACL, VPN termination (conceptual - see guide)
+! WAN: DHCP from ISP in Packet Tracer, or static 203.0.113.2/30 in a lab
+hostname Edge-Router
+no ip domain-lookup
+!
+interface GigabitEthernet0/0
+ description WAN to ISP
+ ip address dhcp
+ ip nat outside
+ no shutdown
+!
+interface GigabitEthernet0/1
+ description LAN to Core Switch
+ ip address 192.168.1.2 255.255.255.252
+ ip nat inside
+ no shutdown
+!
+ip route 192.168.10.0 255.255.255.0 192.168.1.1
+ip route 192.168.20.0 255.255.255.0 192.168.1.1
+ip route 192.168.30.0 255.255.255.0 192.168.1.1
+ip route 192.168.40.0 255.255.255.0 192.168.1.1
+!
+ip nat inside source list 10 interface GigabitEthernet0/0 overload
+access-list 10 permit 192.168.10.0 0.0.0.255
+access-list 10 permit 192.168.20.0 0.0.0.255
+access-list 10 permit 192.168.40.0 0.0.0.255
+! Guest NAT is allowed for internet only - Guest to internal is blocked on the Core Switch ACLs
+access-list 10 permit 192.168.30.0 0.0.0.255
+!
+! Inbound: default deny is implicit at the end. Explicitly block private/RFC1918 on WAN in a real deployment.
+! In Packet Tracer, keep this minimal - do not block the lab ISP network.
+!
+line con 0
+ logging synchronous
+line vty 0 4
+ login local
+ transport input ssh
+!
+end

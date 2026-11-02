@@ -1,0 +1,90 @@
+! Core Switch - Small Business Network Design
+! Device: Cisco 3560 Multilayer Switch (Packet Tracer)
+! Role: Layer 3 routing, VLAN SVIs, inter-VLAN ACLs, DHCP
+hostname Core-Switch
+ip routing
+no ip domain-lookup
+!
+vlan 10
+ name Management
+vlan 20
+ name Staff
+vlan 30
+ name Guest
+vlan 40
+ name Servers
+!
+interface Vlan10
+ ip address 192.168.10.1 255.255.255.0
+ no shutdown
+interface Vlan20
+ ip address 192.168.20.1 255.255.255.0
+ ip access-group STAFF-IN in
+ no shutdown
+interface Vlan30
+ ip address 192.168.30.1 255.255.255.0
+ ip access-group GUEST-IN in
+ no shutdown
+interface Vlan40
+ ip address 192.168.40.1 255.255.255.0
+ no shutdown
+!
+interface GigabitEthernet0/1
+ description Uplink to Edge Router
+ no switchport
+ ip address 192.168.1.1 255.255.255.252
+ no shutdown
+!
+interface GigabitEthernet0/2
+ description Trunk to Access Switch - Staff
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk allowed vlan 10,20,40
+ no shutdown
+!
+interface GigabitEthernet0/3
+ description Trunk to Access Switch - Guest/Servers
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk allowed vlan 10,30,40
+ no shutdown
+!
+! ACLs - applied inbound on SVIs above
+! Staff: to Servers on required ports only, to internet via default route, NOT to Management or Guest
+ip access-list extended STAFF-IN
+ permit ip 192.168.20.0 0.0.0.255 192.168.40.0 0.0.0.255
+ deny ip 192.168.20.0 0.0.0.255 192.168.10.0 0.0.0.255
+ deny ip 192.168.20.0 0.0.0.255 192.168.30.0 0.0.0.255
+ permit ip 192.168.20.0 0.0.0.255 any
+!
+! Guest: internet only - deny all internal VLANs, permit rest (which goes to Edge Router NAT)
+ip access-list extended GUEST-IN
+ deny ip 192.168.30.0 0.0.0.255 192.168.10.0 0.0.0.255
+ deny ip 192.168.30.0 0.0.0.255 192.168.20.0 0.0.0.255
+ deny ip 192.168.30.0 0.0.0.255 192.168.40.0 0.0.0.255
+ permit ip 192.168.30.0 0.0.0.255 any
+!
+! DHCP pools
+ip dhcp pool MGMT
+ network 192.168.10.0 255.255.255.0
+ default-router 192.168.10.1
+ip dhcp pool STAFF
+ network 192.168.20.0 255.255.255.0
+ default-router 192.168.20.1
+ip dhcp pool GUEST
+ network 192.168.30.0 255.255.255.0
+ default-router 192.168.30.1
+ip dhcp pool SERVERS
+ network 192.168.40.0 255.255.255.0
+ default-router 192.168.40.1
+ip dhcp excluded-address 192.168.10.1 192.168.10.10
+ip dhcp excluded-address 192.168.20.1 192.168.20.10
+ip dhcp excluded-address 192.168.30.1 192.168.30.10
+ip dhcp excluded-address 192.168.40.1 192.168.40.10
+!
+ip route 0.0.0.0 0.0.0.0 192.168.1.2
+!
+line con 0
+ logging synchronous
+!
+end

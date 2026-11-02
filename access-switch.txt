@@ -1,0 +1,49 @@
+! Access Switch - Small Business Network Design
+! Device: Cisco 2960 (Packet Tracer) - use one for Staff, one for Guest/Servers, same template
+! Change the access VLAN per switch as noted below
+hostname Access-Switch
+no ip domain-lookup
+!
+vlan 10
+ name Management
+vlan 20
+ name Staff
+vlan 30
+ name Guest
+vlan 40
+ name Servers
+!
+interface FastEthernet0/1
+ description Trunk to Core Switch
+ switchport mode trunk
+ switchport trunk allowed vlan 10,20,30,40
+ no shutdown
+!
+! Staff switch: use FastEthernet0/2-12 as access VLAN 20
+! Guest/Servers switch: use FastEthernet0/2-12 as access VLAN 30 for wireless AP, and VLAN 40 for server ports
+! Example - Staff access port:
+interface FastEthernet0/2
+ description Staff PC
+ switchport mode access
+ switchport access vlan 20
+ switchport port-security maximum 2
+ switchport port-security violation restrict
+ switchport port-security
+ no shutdown
+!
+! Example - Server access port:
+interface FastEthernet0/3
+ description Server
+ switchport mode access
+ switchport access vlan 40
+ no shutdown
+!
+interface Vlan10
+ ip address 192.168.10.11 255.255.255.0
+ no shutdown
+ip default-gateway 192.168.10.1
+!
+line con 0
+ logging synchronous
+!
+end
